@@ -1,0 +1,120 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserController = void 0;
+const service_1 = require("../modules/common/service");
+const service_2 = require("../modules/users/service");
+class UserController {
+    constructor() {
+        this.user_service = new service_2.default();
+    }
+    create_user(req, res) {
+        // this check whether all the filds were send through the erquest or not
+        if (req.body.email) {
+            const user_params = {
+                email: req.body.email
+            };
+            this.user_service.createUser(user_params, (err, user_data) => {
+                if (err) {
+                    service_1.mongoError(err, res);
+                }
+                else {
+                    service_1.successResponse('create user successfull', user_data, res);
+                }
+            });
+        }
+        else {
+            // error response if some fields are missing in request body
+            service_1.insufficientParameters(res);
+        }
+    }
+    get_user(req, res) {
+        if (req.params.id) {
+            const user_filter = { _id: req.params.id };
+            this.user_service.filterUser(user_filter, (err, user_data) => {
+                if (err) {
+                    service_1.mongoError(err, res);
+                }
+                else {
+                    service_1.successResponse('get user successfull', user_data, res);
+                }
+            });
+        }
+        else {
+            service_1.insufficientParameters(res);
+        }
+    }
+    update_user(req, res) {
+        if (req.body.email) {
+            const user_filter = { _id: req.params.id };
+            this.user_service.filterUser(user_filter, (err, user_data) => {
+                if (err) {
+                    service_1.mongoError(err, res);
+                }
+                else if (user_data) {
+                    user_data.modification_notes.push({
+                        modified_on: new Date(Date.now()),
+                        modified_by: null,
+                        modification_note: 'User data updated'
+                    });
+                    const user_params = {
+                        _id: req.params.id,
+                        email: req.body.email ? req.body.email : user_data.email,
+                        is_suspended: req.body.is_suspended ? req.body.is_suspended : user_data.is_suspended,
+                        modification_notes: user_data.modification_notes
+                    };
+                    this.user_service.updateUser(user_params, (err) => {
+                        if (err) {
+                            service_1.mongoError(err, res);
+                        }
+                        else {
+                            service_1.successResponse('update user successfull', null, res);
+                        }
+                    });
+                }
+                else {
+                    service_1.failureResponse('invalid user', null, res);
+                }
+            });
+        }
+        else {
+            service_1.insufficientParameters(res);
+        }
+    }
+    delete_user(req, res) {
+        if (req.params.id) {
+            this.user_service.deleteUser(req.params.id, (err, delete_details) => {
+                if (err) {
+                    service_1.mongoError(err, res);
+                }
+                else if (delete_details.deletedCount !== 0) {
+                    service_1.successResponse('delete user successfull', null, res);
+                }
+                else {
+                    service_1.failureResponse('invalid user', null, res);
+                }
+            });
+        }
+        else {
+            service_1.insufficientParameters(res);
+        }
+    }
+    suspend_students(req, res) {
+        if (req.body.students) {
+            this.user_service.suspendUser(req.body.students, (err, details) => {
+                if (err) {
+                    service_1.mongoError(err, res);
+                }
+                else if (details) {
+                    service_1.successResponse('student suspended successfully', null, res);
+                }
+                else {
+                    service_1.failureResponse('invalid user', null, res);
+                }
+            });
+        }
+        else {
+            service_1.insufficientParameters(res);
+        }
+    }
+}
+exports.UserController = UserController;
